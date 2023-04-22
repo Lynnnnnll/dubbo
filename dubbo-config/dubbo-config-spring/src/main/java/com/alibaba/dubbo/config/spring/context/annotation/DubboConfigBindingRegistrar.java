@@ -72,12 +72,14 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
 
     protected void registerBeanDefinitions(AnnotationAttributes attributes, BeanDefinitionRegistry registry) {
 
+        // 获取具体的属性值
         String prefix = environment.resolvePlaceholders(attributes.getString("prefix"));
 
         Class<? extends AbstractConfig> configClass = attributes.getClass("type");
 
         boolean multiple = attributes.getBoolean("multiple");
 
+        // 注册dubbo配置bean
         registerDubboConfigBeans(prefix, configClass, multiple, registry);
 
     }
@@ -87,6 +89,7 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
                                           boolean multiple,
                                           BeanDefinitionRegistry registry) {
 
+        // 环境中获取属性值
         Map<String, Object> properties = getSubProperties(environment.getPropertySources(), prefix);
 
         if (CollectionUtils.isEmpty(properties)) {
@@ -97,13 +100,17 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
             return;
         }
 
+
+        // 处理beanName
         Set<String> beanNames = multiple ? resolveMultipleBeanNames(properties) :
                 Collections.singleton(resolveSingleBeanName(properties, configClass, registry));
 
         for (String beanName : beanNames) {
 
+            // 注册dubbo 配置 bean
             registerDubboConfigBean(beanName, configClass, registry);
 
+            // 注册bean后置处理器
             registerDubboConfigBindingBeanPostProcessor(prefix, beanName, multiple, registry);
 
         }

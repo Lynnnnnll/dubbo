@@ -73,6 +73,7 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
         InstantiationAwareBeanPostProcessorAdapter implements MergedBeanDefinitionPostProcessor, PriorityOrdered,
         BeanFactoryAware, BeanClassLoaderAware, EnvironmentAware, DisposableBean {
 
+    // 缓存大小
     private final static int CACHE_SIZE = Integer.getInteger("", 32);
 
     private final Log logger = LogFactory.getLog(getClass());
@@ -82,6 +83,7 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
     private final ConcurrentMap<String, AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata> injectionMetadataCache =
             new ConcurrentHashMap<String, AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata>(CACHE_SIZE);
 
+    // 注入对象缓存
     private final ConcurrentMap<String, Object> injectedObjectsCache = new ConcurrentHashMap<String, Object>(CACHE_SIZE);
 
     private ConfigurableListableBeanFactory beanFactory;
@@ -332,13 +334,18 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
     protected Object getInjectedObject(A annotation, Object bean, String beanName, Class<?> injectedType,
                                        InjectionMetadata.InjectedElement injectedElement) throws Exception {
 
+        // 构建缓存key
+        // 例：ServiceBean:com.alibaba.dubbo.demo.DemoService#source=private com.alibaba.dubbo.demo.DemoService com.alibaba.dubbo.demo.consumer.annotation.DemoServiceComponent.demoService#attributes={}
         String cacheKey = buildInjectedObjectCacheKey(annotation, bean, beanName, injectedType, injectedElement);
 
+        // 从缓存里获取注入的对象
         Object injectedObject = injectedObjectsCache.get(cacheKey);
 
         if (injectedObject == null) {
+            // 执行注入
             injectedObject = doGetInjectedBean(annotation, bean, beanName, injectedType, injectedElement);
             // Customized inject-object if necessary
+            // 放入缓存
             injectedObjectsCache.putIfAbsent(cacheKey, injectedObject);
         }
 

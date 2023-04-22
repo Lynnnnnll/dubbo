@@ -103,16 +103,20 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
+            // 导出服务
             export();
         }
     }
 
     private boolean isDelay() {
+        // 获取当前配置delay
         Integer delay = getDelay();
         ProviderConfig provider = getProvider();
         if (delay == null && provider != null) {
+            // 获取provider的delay
             delay = provider.getDelay();
         }
+        // 没有配置delay或者为-1则正常export
         return supportedApplicationListener && (delay == null || delay == -1);
     }
 
@@ -265,6 +269,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     public void export() {
         super.export();
         // Publish ServiceBeanExportedEvent
+        // 发布serviceBean导出事件，referencePostProcessor会执行引用
         publishExportEvent();
     }
 

@@ -138,6 +138,7 @@ public class CodecSupport {
                 Byte localId = SERIALIZATIONNAME_ID_MAP.get(serializationName);
                 supportedSerialization.add(localId);
             }
+            // 序列化方式
             PROVIDER_SUPPORTED_SERIALIZATION.put(serviceName, Collections.unmodifiableSet(supportedSerialization));
         }
     }

@@ -71,10 +71,13 @@ abstract class AbstractAnnotationConfigBeanBuilder<A extends Annotation, B exten
      */
     public final B build() throws Exception {
 
+        // 未实现
         checkDependencies();
 
+        // 返回referenceBean
         B bean = doBuild();
 
+        // 配置bean
         configureBean(bean);
 
         if (logger.isInfoEnabled()) {
@@ -99,14 +102,19 @@ abstract class AbstractAnnotationConfigBeanBuilder<A extends Annotation, B exten
 
     protected void configureBean(B bean) throws Exception {
 
+        // 配置数据绑定器
         preConfigureBean(annotation, bean);
 
+        // 配置注册中心
         configureRegistryConfigs(bean);
 
+        // 配置监控中心
         configureMonitorConfig(bean);
 
+        // 配置application
         configureApplicationConfig(bean);
 
+        // 配置module
         configureModuleConfig(bean);
 
         postConfigureBean(annotation, bean);

@@ -59,15 +59,19 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
      */
     private static final int CACHE_SIZE = Integer.getInteger(BEAN_NAME + ".cache.size", 32);
 
+    // ReferenceBean 缓存 Map
     private final ConcurrentMap<String, ReferenceBean<?>> referenceBeanCache =
             new ConcurrentHashMap<String, ReferenceBean<?>>(CACHE_SIZE);
 
+    // ReferenceBeanInvocationHandler 缓存 Map
     private final ConcurrentHashMap<String, ReferenceBeanInvocationHandler> localReferenceBeanInvocationHandlerCache =
             new ConcurrentHashMap<String, ReferenceBeanInvocationHandler>(CACHE_SIZE);
 
+    // 属性referenceBean缓存
     private final ConcurrentMap<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedFieldReferenceBeanCache =
             new ConcurrentHashMap<InjectionMetadata.InjectedElement, ReferenceBean<?>>(CACHE_SIZE);
 
+    // 方法referenceBean缓存
     private final ConcurrentMap<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedMethodReferenceBeanCache =
             new ConcurrentHashMap<InjectionMetadata.InjectedElement, ReferenceBean<?>>(CACHE_SIZE);
 
@@ -107,36 +111,46 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     protected Object doGetInjectedBean(Reference reference, Object bean, String beanName, Class<?> injectedType,
                                        InjectionMetadata.InjectedElement injectedElement) throws Exception {
 
+        // 同serviceBeanName生成逻辑
         String referencedBeanName = buildReferencedBeanName(reference, injectedType);
 
+        // 构建referenceBean
         ReferenceBean referenceBean = buildReferenceBeanIfAbsent(referencedBeanName, reference, injectedType, getClassLoader());
 
+        // 缓存
         cacheInjectedReferenceBean(referenceBean, injectedElement);
 
+        // 构建代理
         Object proxy = buildProxy(referencedBeanName, referenceBean, injectedType);
 
         return proxy;
     }
 
     private Object buildProxy(String referencedBeanName, ReferenceBean referenceBean, Class<?> injectedType) {
+        // 构建handler
         InvocationHandler handler = buildInvocationHandler(referencedBeanName, referenceBean);
+        // 生成代理
         Object proxy = Proxy.newProxyInstance(getClassLoader(), new Class[]{injectedType}, handler);
         return proxy;
     }
 
     private InvocationHandler buildInvocationHandler(String referencedBeanName, ReferenceBean referenceBean) {
 
+        // 缓存获取
         ReferenceBeanInvocationHandler handler = localReferenceBeanInvocationHandlerCache.get(referencedBeanName);
 
         if (handler == null) {
+            // 构建
             handler = new ReferenceBeanInvocationHandler(referenceBean);
         }
 
+        // 如果是本地服务，则直接存入缓存，且初始化在serviceBean暴露之后，会在onApplicationEvent执行
         if (applicationContext.containsBean(referencedBeanName)) { // Is local @Service Bean or not ?
             // ReferenceBeanInvocationHandler's initialization has to wait for current local @Service Bean has been exported.
             localReferenceBeanInvocationHandlerCache.put(referencedBeanName, handler);
         } else {
             // Remote Reference Bean should initialize immediately
+            // 如果是远程服务则直接初始化
             handler.init();
         }
 
@@ -196,13 +210,18 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
                                                      Class<?> referencedType, ClassLoader classLoader)
             throws Exception {
 
+        // 从referenceBean缓存获取
         ReferenceBean<?> referenceBean = referenceBeanCache.get(referencedBeanName);
 
         if (referenceBean == null) {
+            // 初始化builder
             ReferenceBeanBuilder beanBuilder = ReferenceBeanBuilder
                     .create(reference, classLoader, applicationContext)
                     .interfaceClass(referencedType);
+            // 构建
             referenceBean = beanBuilder.build();
+
+            // 存入缓存
             referenceBeanCache.put(referencedBeanName, referenceBean);
         }
 
@@ -233,15 +252,19 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     }
 
     private void onServiceBeanExportEvent(ServiceBeanExportedEvent event) {
+        // 获取serviceBean
         ServiceBean serviceBean = event.getServiceBean();
+        // 初始化对应的 ReferenceBeanInvocationHandler
         initReferenceBeanInvocationHandler(serviceBean);
     }
 
     private void initReferenceBeanInvocationHandler(ServiceBean serviceBean) {
         String serviceBeanName = serviceBean.getBeanName();
         // Remove ServiceBean when it's exported
+        // 在缓存中则代表未初始化，从 localReferenceBeanInvocationHandlerCache 缓存中，移除
         ReferenceBeanInvocationHandler handler = localReferenceBeanInvocationHandlerCache.remove(serviceBeanName);
         // Initialize
+        // 从 localReferenceBeanInvocationHandlerCache 缓存中，移除
         if (handler != null) {
             handler.init();
         }

@@ -85,7 +85,7 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
         if (beanName.equals(this.beanName) && bean instanceof AbstractConfig) {
 
             AbstractConfig dubboConfig = (AbstractConfig) bean;
-
+            // 绑定属性到配置中
             bind(prefix, dubboConfig);
 
             customize(beanName, dubboConfig);
@@ -132,6 +132,7 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
     @Override
     public void afterPropertiesSet() throws Exception {
 
+        // 初始化dubboConfigBinder对象
         initDubboConfigBinder();
 
         initConfigBeanCustomizers();

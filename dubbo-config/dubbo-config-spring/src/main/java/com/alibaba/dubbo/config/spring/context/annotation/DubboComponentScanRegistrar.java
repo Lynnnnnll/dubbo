@@ -54,10 +54,13 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 
+        // 获取包扫描路径
         Set<String> packagesToScan = getPackagesToScan(importingClassMetadata);
 
+        // 注册ServiceAnnotationBeanPostProcessor 用于处理@service注解
         registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);
 
+        // 注册ReferenceAnnotationBeanPostProcessor 用于处理@service注解
         registerReferenceAnnotationBeanPostProcessor(registry);
 
     }
@@ -99,11 +102,13 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
         Class<?>[] basePackageClasses = attributes.getClassArray("basePackageClasses");
         String[] value = attributes.getStringArray("value");
         // Appends value array attributes
+        // 情况一，将属性添加到 packagesToScan 集合中
         Set<String> packagesToScan = new LinkedHashSet<String>(Arrays.asList(value));
         packagesToScan.addAll(Arrays.asList(basePackages));
         for (Class<?> basePackageClass : basePackageClasses) {
             packagesToScan.add(ClassUtils.getPackageName(basePackageClass));
         }
+        // 情况二，如果 packagesToScan 为空，则默认使用注解类所在的包
         if (packagesToScan.isEmpty()) {
             return Collections.singleton(ClassUtils.getPackageName(metadata.getClassName()));
         }

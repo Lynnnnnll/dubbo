@@ -56,6 +56,7 @@ public abstract class AnnotatedBeanDefinitionRegistryUtils {
             logger.debug(registry.getClass().getSimpleName() + " will register annotated classes : " + Arrays.asList(annotatedClasses) + " .");
         }
 
+        // 注册bean
         reader.register(annotatedClasses);
 
     }

@@ -101,9 +101,11 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
 
+        // 解析 packagesToScan 集合。因为，可能存在占位符
         Set<String> resolvedPackagesToScan = resolvePackagesToScan(packagesToScan);
 
         if (!CollectionUtils.isEmpty(resolvedPackagesToScan)) {
+            //packagesToScan 包，创建对应的 Spring BeanDefinition 对象，从而创建 Dubbo Service Bean 对象
             registerServiceBeans(resolvedPackagesToScan, registry);
         } else {
             if (logger.isWarnEnabled()) {
@@ -122,27 +124,33 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
      */
     private void registerServiceBeans(Set<String> packagesToScan, BeanDefinitionRegistry registry) {
 
+        // 创建 DubboClassPathBeanDefinitionScanner 对象
         DubboClassPathBeanDefinitionScanner scanner =
                 new DubboClassPathBeanDefinitionScanner(registry, environment, resourceLoader);
-
+        // 添加beanName生成器
         BeanNameGenerator beanNameGenerator = resolveBeanNameGenerator(registry);
 
         scanner.setBeanNameGenerator(beanNameGenerator);
 
+        //  需要扫描的注解类
         scanner.addIncludeFilter(new AnnotationTypeFilter(Service.class));
 
         for (String packageToScan : packagesToScan) {
 
             // Registers @Service Bean first
+            // 执行扫描
             scanner.scan(packageToScan);
 
             // Finds all BeanDefinitionHolders of @Service whether @ComponentScan scans or not.
+            //  创建每个在 packageToScan 扫描到的类，对应的 BeanDefinitionHolder 对象，返回 BeanDefinitionHolder 集合
+            // 不管是否在@ComponentScan扫描范围内
             Set<BeanDefinitionHolder> beanDefinitionHolders =
                     findServiceBeanDefinitionHolders(scanner, packageToScan, registry, beanNameGenerator);
 
             if (!CollectionUtils.isEmpty(beanDefinitionHolders)) {
 
                 for (BeanDefinitionHolder beanDefinitionHolder : beanDefinitionHolders) {
+                    // 注册serviceBean
                     registerServiceBean(beanDefinitionHolder, registry, scanner);
                 }
 
@@ -247,21 +255,27 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
     private void registerServiceBean(BeanDefinitionHolder beanDefinitionHolder, BeanDefinitionRegistry registry,
                                      DubboClassPathBeanDefinitionScanner scanner) {
 
+        // 获取当前bean class类型
         Class<?> beanClass = resolveClass(beanDefinitionHolder);
 
+        // 获取注解类型信息
         Service service = findAnnotation(beanClass, Service.class);
 
+        //获取当前接口
         Class<?> interfaceClass = resolveServiceInterfaceClass(beanClass, service);
 
         String annotatedServiceBeanName = beanDefinitionHolder.getBeanName();
 
+        // 构建bd
         AbstractBeanDefinition serviceBeanDefinition =
                 buildServiceBeanDefinition(service, interfaceClass, annotatedServiceBeanName);
 
         // ServiceBean Bean name
+        // 生成beanName
         String beanName = generateServiceBeanName(service, interfaceClass, annotatedServiceBeanName);
 
         if (scanner.checkCandidate(beanName, serviceBeanDefinition)) { // check duplicated candidate bean
+            // 注册bd
             registry.registerBeanDefinition(beanName, serviceBeanDefinition);
 
             if (logger.isInfoEnabled()) {
@@ -299,14 +313,17 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
 
     private Class<?> resolveServiceInterfaceClass(Class<?> annotatedServiceBeanClass, Service service) {
 
+        // 首先，从注解本身上获得
         Class<?> interfaceClass = service.interfaceClass();
 
         if (void.class.equals(interfaceClass)) {
 
             interfaceClass = null;
 
+            // 获得 @Service 注解的 interfaceName 属性
             String interfaceClassName = service.interfaceName();
 
+            // 如果存在，获得其对应的类
             if (StringUtils.hasText(interfaceClassName)) {
                 if (ClassUtils.isPresent(interfaceClassName, classLoader)) {
                     interfaceClass = resolveClassName(interfaceClassName, classLoader);
@@ -318,6 +335,7 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
         if (interfaceClass == null) {
             // Find all interfaces from the annotated class
             // To resolve an issue : https://github.com/apache/incubator-dubbo/issues/3251
+            // 则从被注解的类上获得其实现的首个接口
             Class<?>[] allInterfaces = ClassUtils.getAllInterfacesForClass(annotatedServiceBeanClass);
 
             if (allInterfaces.length > 0) {
