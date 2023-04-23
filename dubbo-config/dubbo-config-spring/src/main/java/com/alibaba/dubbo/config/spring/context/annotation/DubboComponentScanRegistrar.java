@@ -106,6 +106,7 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
         Set<String> packagesToScan = new LinkedHashSet<String>(Arrays.asList(value));
         packagesToScan.addAll(Arrays.asList(basePackages));
         for (Class<?> basePackageClass : basePackageClasses) {
+            // 获取类所在包
             packagesToScan.add(ClassUtils.getPackageName(basePackageClass));
         }
         // 情况二，如果 packagesToScan 为空，则默认使用注解类所在的包

@@ -266,7 +266,7 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
 
         String annotatedServiceBeanName = beanDefinitionHolder.getBeanName();
 
-        // 构建bd
+        // 构建bd，也就是将@Service注解的属性转换成ServiceBean的bd
         AbstractBeanDefinition serviceBeanDefinition =
                 buildServiceBeanDefinition(service, interfaceClass, annotatedServiceBeanName);
 
@@ -274,8 +274,9 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
         // 生成beanName
         String beanName = generateServiceBeanName(service, interfaceClass, annotatedServiceBeanName);
 
+        // 校验是有已有对应bean
         if (scanner.checkCandidate(beanName, serviceBeanDefinition)) { // check duplicated candidate bean
-            // 注册bd
+            // 注册对应serviceBean
             registry.registerBeanDefinition(beanName, serviceBeanDefinition);
 
             if (logger.isInfoEnabled()) {
@@ -313,7 +314,7 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
 
     private Class<?> resolveServiceInterfaceClass(Class<?> annotatedServiceBeanClass, Service service) {
 
-        // 首先，从注解本身上获得
+        // 首先，从注解本身属性上获取
         Class<?> interfaceClass = service.interfaceClass();
 
         if (void.class.equals(interfaceClass)) {

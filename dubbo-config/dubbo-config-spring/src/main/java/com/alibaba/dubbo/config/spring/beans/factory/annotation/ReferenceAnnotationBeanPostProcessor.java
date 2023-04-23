@@ -63,7 +63,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     private final ConcurrentMap<String, ReferenceBean<?>> referenceBeanCache =
             new ConcurrentHashMap<String, ReferenceBean<?>>(CACHE_SIZE);
 
-    // ReferenceBeanInvocationHandler 缓存 Map
+    // ReferenceBeanInvocationHandler 缓存 Map，用于存放远程服务为初始化的情况，等待serviceBean暴露发出事件监听后，再进行初始化
     private final ConcurrentHashMap<String, ReferenceBeanInvocationHandler> localReferenceBeanInvocationHandlerCache =
             new ConcurrentHashMap<String, ReferenceBeanInvocationHandler>(CACHE_SIZE);
 
@@ -111,7 +111,10 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     protected Object doGetInjectedBean(Reference reference, Object bean, String beanName, Class<?> injectedType,
                                        InjectionMetadata.InjectedElement injectedElement) throws Exception {
 
-        // 同serviceBeanName生成逻辑
+        // 获取引用的serviceBeanName  同serviceBeanName生成逻辑
+        // 1.获取reference注解的interface属性
+        // 2.不存在则获取interfaceClass的name
+        // 3.不存在则获取injectedType的name
         String referencedBeanName = buildReferencedBeanName(reference, injectedType);
 
         // 构建referenceBean
@@ -140,13 +143,14 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
         ReferenceBeanInvocationHandler handler = localReferenceBeanInvocationHandlerCache.get(referencedBeanName);
 
         if (handler == null) {
-            // 构建
+            // 构建，单纯封装referenceBean
             handler = new ReferenceBeanInvocationHandler(referenceBean);
         }
 
         // 如果是本地服务，则直接存入缓存，且初始化在serviceBean暴露之后，会在onApplicationEvent执行
         if (applicationContext.containsBean(referencedBeanName)) { // Is local @Service Bean or not ?
             // ReferenceBeanInvocationHandler's initialization has to wait for current local @Service Bean has been exported.
+            // ReferenceBeanInvocationHandler 的初始化必须等待当前本地的@Service Bean 被导出。
             localReferenceBeanInvocationHandlerCache.put(referencedBeanName, handler);
         } else {
             // Remote Reference Bean should initialize immediately
@@ -218,7 +222,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
             ReferenceBeanBuilder beanBuilder = ReferenceBeanBuilder
                     .create(reference, classLoader, applicationContext)
                     .interfaceClass(referencedType);
-            // 构建
+            // 构建，主要是属性填充
             referenceBean = beanBuilder.build();
 
             // 存入缓存

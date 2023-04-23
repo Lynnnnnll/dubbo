@@ -89,7 +89,7 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
                                           boolean multiple,
                                           BeanDefinitionRegistry registry) {
 
-        // 环境中获取属性值
+        // 环境中获取属性值 name -> dubbo-demo-annotation-provider
         Map<String, Object> properties = getSubProperties(environment.getPropertySources(), prefix);
 
         if (CollectionUtils.isEmpty(properties)) {
@@ -101,7 +101,7 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
         }
 
 
-        // 处理beanName
+        // 处理beanName  com.alibaba.dubbo.config.ApplicationConfig#0
         Set<String> beanNames = multiple ? resolveMultipleBeanNames(properties) :
                 Collections.singleton(resolveSingleBeanName(properties, configClass, registry));
 

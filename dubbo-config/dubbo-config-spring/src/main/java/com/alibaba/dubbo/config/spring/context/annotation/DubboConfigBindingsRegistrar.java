@@ -46,6 +46,7 @@ public class DubboConfigBindingsRegistrar implements ImportBeanDefinitionRegistr
                 importingClassMetadata.getAnnotationAttributes(EnableDubboConfigBindings.class.getName()));
 
         // 获取注解属性
+        // dubbo.application dubbo.protocol等
         AnnotationAttributes[] annotationAttributes = attributes.getAnnotationArray("value");
 
         // 用于注册bean
