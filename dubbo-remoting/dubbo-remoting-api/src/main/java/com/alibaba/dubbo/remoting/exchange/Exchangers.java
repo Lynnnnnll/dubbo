@@ -67,6 +67,7 @@ public class Exchangers {
             throw new IllegalArgumentException("handler == null");
         }
         url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        // 通过扩展点获取到的是HeaderExchanger
         return getExchanger(url).bind(url, handler);
     }
 

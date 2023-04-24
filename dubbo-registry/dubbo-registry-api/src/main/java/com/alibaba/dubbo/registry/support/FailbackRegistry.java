@@ -134,11 +134,14 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         failedUnregistered.remove(url);
         try {
             // Sending a registration request to the server side
+            // 执行注册逻辑
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
 
+
             // If the startup detection is opened, the Exception is thrown directly.
+            // 如果开启了启动检测，则直接抛出异常
             boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                     && url.getParameter(Constants.CHECK_KEY, true)
                     && !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());

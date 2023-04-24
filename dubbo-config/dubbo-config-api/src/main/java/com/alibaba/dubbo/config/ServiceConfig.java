@@ -405,7 +405,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         appendParameters(map, provider, Constants.DEFAULT_KEY);
         appendParameters(map, protocolConfig);
         appendParameters(map, this);
-        // methods 为 MethodConfig 集合，MethodConfig 中存储了 <dubbo:method> 标签的配置信息
+        // methods 为 MethodConfig 集合，MethodConfig 中存储了 <dubbo:method> <dubbo:argument> 等标签的配置信息
         if (methods != null && !methods.isEmpty()) {
             for (MethodConfig method : methods) {
                 // 添加 MethodConfig 对象的字段信息到 map 中，键 = 方法名.属性名。
@@ -562,7 +562,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                             // 添加proxy key
                             registryURL = registryURL.addParameter(Constants.PROXY_KEY, proxy);
                         }
-                        // 为服务提供类(ref)生成 Invoker
+                        // 为服务提供类(ref)生成 Invoker，默认为javassistProxyFactory
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                         // DelegateProviderMetaDataInvoker 用于持有 Invoker 和 ServiceConfig
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
