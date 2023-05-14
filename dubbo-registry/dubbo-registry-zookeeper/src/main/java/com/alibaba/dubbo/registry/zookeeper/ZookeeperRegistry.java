@@ -61,12 +61,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (url.isAnyHost()) {
             throw new IllegalStateException("registry address == null");
         }
+        // 获取分组，如果没有设置分组，则使用默认分组 为dubbo
         String group = url.getParameter(Constants.GROUP_KEY, DEFAULT_ROOT);
         if (!group.startsWith(Constants.PATH_SEPARATOR)) {
             group = Constants.PATH_SEPARATOR + group;
         }
         this.root = group;
+        // 创建zk客户端
         zkClient = zookeeperTransporter.connect(url);
+        // 添加状态监听器
         zkClient.addStateListener(new StateListener() {
             @Override
             public void stateChanged(int state) {

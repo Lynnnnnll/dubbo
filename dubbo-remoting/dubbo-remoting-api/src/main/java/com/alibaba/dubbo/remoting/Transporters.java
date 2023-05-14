@@ -47,12 +47,14 @@ public class Transporters {
         if (handlers == null || handlers.length == 0) {
             throw new IllegalArgumentException("handlers == null");
         }
+        // DecodeHandler(HeaderExchangeHandler(DubboProtocol$1))
         ChannelHandler handler;
         if (handlers.length == 1) {
             handler = handlers[0];
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        // 扩展点
         return getTransporter().bind(url, handler);
     }
 
