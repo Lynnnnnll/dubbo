@@ -1,12 +1,18 @@
 package com.alibaba.dubbo.demo.provider.annotation;
 
+import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.alibaba.dubbo.config.spring.context.annotation.EnableDubbo;
 import com.alibaba.dubbo.demo.DemoService;
+import com.alibaba.dubbo.rpc.Filter;
+import com.alibaba.dubbo.rpc.Protocol;
+import com.alibaba.dubbo.rpc.cluster.LoadBalance;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+
+import java.util.List;
 
 /**
  * @author Lynn
@@ -34,7 +40,7 @@ public class Application {
         @Bean // <3>
         public RegistryConfig registryConfig() {
             RegistryConfig registryConfig = new RegistryConfig();
-            registryConfig.setAddress("zookeeper://127.0.0.1:2181");
+            registryConfig.setAddress("zookeeper://192.168.68.152:2181");
             return registryConfig;
         }
 

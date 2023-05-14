@@ -195,7 +195,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     public synchronized void export() {
-        // 获取export属性，判断是否需要暴露
+        // 获取provicer export、delay属性，判断是否需要暴露
         if (provider != null) {
             if (export == null) {
                 export = provider.getExport();

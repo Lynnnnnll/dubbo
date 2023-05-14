@@ -61,23 +61,34 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);
 
+    // 用于选择合适的集群容错策略。
     private static final Cluster cluster = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
-
+    // 类型为 RouterFactory，用于获取适配的路由工厂。
     private static final RouterFactory routerFactory = ExtensionLoader.getExtensionLoader(RouterFactory.class).getAdaptiveExtension();
-
+    // 类型为 ConfiguratorFactory，用于获取适配的配置工厂。
     private static final ConfiguratorFactory configuratorFactory = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class).getAdaptiveExtension();
+    // 服务键，用于标识服务的唯一性。 interface:group:version
     private final String serviceKey; // Initialization at construction time, assertion not null
+    // 服务接口的类型。
     private final Class<T> serviceType; // Initialization at construction time, assertion not null
+    // Consumer URL 的查询参数。
     private final Map<String, String> queryMap; // Initialization at construction time, assertion not null
+    // 服务目录的 URL，用于唯一标识一个服务。
     private final URL directoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
+    // 服务接口的方法名数组。
     private final String[] serviceMethods;
+    // 是否引用多分组。
     private final boolean multiGroup;
+    //  Protocol 对象，用于处理服务的协议。
     private Protocol protocol; // Initialization at the time of injection, the assertion is not null
+    //  Registry 对象，用于处理服务的注册中心。
     private Registry registry; // Initialization at the time of injection, the assertion is not null
+    // 是否禁用服务。
     private volatile boolean forbidden = false;
 
+    // 覆盖的服务目录 URL。
     private volatile URL overrideDirectoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
-
+    // 注册的消费者 URL。
     private volatile URL registeredConsumerUrl;
 
     /**
@@ -86,14 +97,18 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * Rule one: for a certain provider <ip:port,timeout=100>
      * Rule two: for all providers <* ,timeout=5000>
      */
+    // 配置器列表，用于存储服务的配置器
     private volatile List<Configurator> configurators; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
     // Map<url, Invoker> cache service url to invoker mapping.
+    // URL 到 Invoker 对象的映射，用于缓存服务地址到 Invoker 的映射关系。
     private volatile Map<String, Invoker<T>> urlInvokerMap; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
+    // 方法名到 Invoker 列表的映射，用于缓存方法名到 Invoker 的映射关系。
     // Map<methodName, Invoker> cache service method to invokers mapping.
     private volatile Map<String, List<Invoker<T>>> methodInvokerMap; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
+    //  缓存的调用地址集合，用于缓存服务提供者的地址。
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
     private volatile Set<URL> cachedInvokerUrls; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
@@ -194,40 +209,50 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     @Override
     public synchronized void notify(List<URL> urls) {
+        // 根据 URL 的分类或协议，分别处理不同的 URL 集合
+        // invoked by registry, update urls cache, notify listeners
         List<URL> invokerUrls = new ArrayList<URL>();
+        // 路由集合
         List<URL> routerUrls = new ArrayList<URL>();
+        // 配置规则集合
         List<URL> configuratorUrls = new ArrayList<URL>();
         for (URL url : urls) {
             String protocol = url.getProtocol();
+            // 获取 category 参数
             String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
+            // 根据 category 参数将 url 分别放到不同的列表中
             if (Constants.ROUTERS_CATEGORY.equals(category)
                     || Constants.ROUTE_PROTOCOL.equals(protocol)) {
+                // 添加路由器 url
                 routerUrls.add(url);
             } else if (Constants.CONFIGURATORS_CATEGORY.equals(category)
                     || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {
+                // 添加配置器 url
                 configuratorUrls.add(url);
             } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {
+                // 添加服务提供者 url
                 invokerUrls.add(url);
             } else {
-                logger.warn("Unsupported category " + category + " in notified url: " + url + " from registry " + getUrl().getAddress() + " to consumer " + NetUtils.getLocalHost());
+                // 忽略不支持的 category
+                logger.warn("Unsupported category ...");
             }
         }
-        // configurators
         if (configuratorUrls != null && !configuratorUrls.isEmpty()) {
+            // 将 url 转成 Configurator
             this.configurators = toConfigurators(configuratorUrls);
         }
-        // routers
         if (routerUrls != null && !routerUrls.isEmpty()) {
+            // 将 url 转成 Router
             List<Router> routers = toRouters(routerUrls);
-            if (routers != null) { // null - do nothing
+            if (routers != null) {
                 setRouters(routers);
             }
         }
-        List<Configurator> localConfigurators = this.configurators; // local reference
-        // merge override parameters
+        List<Configurator> localConfigurators = this.configurators;
         this.overrideDirectoryUrl = directoryUrl;
         if (localConfigurators != null && !localConfigurators.isEmpty()) {
             for (Configurator configurator : localConfigurators) {
+                // 配置 overrideDirectoryUrl
                 this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);
             }
         }
@@ -590,18 +615,24 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                         + " use dubbo version " + Version.getVersion() + ", please check status of providers(disabled, not registered or in blacklist).");
         }
         List<Invoker<T>> invokers = null;
+        //  // 获取 Invoker 本地缓存
         Map<String, List<Invoker<T>>> localMethodInvokerMap = this.methodInvokerMap; // local reference
         if (localMethodInvokerMap != null && localMethodInvokerMap.size() > 0) {
+            // 获取方法名和参数列表
             String methodName = RpcUtils.getMethodName(invocation);
             Object[] args = RpcUtils.getArguments(invocation);
+            // 检测参数列表的第一个参数是否为 String 或 enum 类型
             if (args != null && args.length > 0 && args[0] != null
                     && (args[0] instanceof String || args[0].getClass().isEnum())) {
+                // ???
                 invokers = localMethodInvokerMap.get(methodName + "." + args[0]); // The routing can be enumerated according to the first parameter
             }
             if (invokers == null) {
+                // 获取 Invoker 列表
                 invokers = localMethodInvokerMap.get(methodName);
             }
             if (invokers == null) {
+                // 通过星号 * 获取 Invoker 列表
                 invokers = localMethodInvokerMap.get(Constants.ANY_VALUE);
             }
             if (invokers == null) {
@@ -611,6 +642,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 }
             }
         }
+        // 返回 Invoker 列表
         return invokers == null ? new ArrayList<Invoker<T>>(0) : invokers;
     }
 

@@ -53,6 +53,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     static Exporter<?> getExporter(Map<String, Exporter<?>> map, URL key) {
         Exporter<?> result = null;
 
+        // key.getServiceKey() = com.alibaba.dubbo.demo.DemoService
         if (!key.getServiceKey().contains("*")) {
             result = map.get(key.getServiceKey());
         } else {
