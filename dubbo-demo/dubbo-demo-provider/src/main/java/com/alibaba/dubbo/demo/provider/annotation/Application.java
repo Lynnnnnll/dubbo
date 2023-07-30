@@ -44,5 +44,11 @@ public class Application {
             return registryConfig;
         }
 
+        @Bean // <3>
+        public RegistryConfig nacosRegistryConfig() {
+            RegistryConfig registryConfig = new RegistryConfig();
+            registryConfig.setAddress("N/A");
+            return registryConfig;
+        }
     }
 }
